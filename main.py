@@ -10,9 +10,9 @@ FUNCTION_IMAGE_URL = 'ghcr.io/openfaas/external-ip-fn:latest'
 DEPLOY_ERR_TEXT = 'unable create Deployment: object is being deleted:'
 
 def get_cluster_url(cluster_number):
-    hostname = os.environ[f'OPENFAAS_URL{cluster_number}']
-    password = os.environ[f'OPENFAAS_PASSWORD{cluster_number}']
-    full_url = f'http://admin:{password}@{hostname}'
+    hostname = os.environ['OPENFAAS_URL%d'%cluster_number]
+    password = os.environ['OPENFAAS_PASSWORD%d'%cluster_number]
+    full_url = 'http://admin:%s@%s' %(password, hostname)
     return full_url
 
 url_cluster1 = get_cluster_url(1) #"http://admin:AEAEctrk6xMu@a7459eb1453154b4ea2488e55a038782-998957349.us-east-1.elb.amazonaws.com:8080"
@@ -45,7 +45,7 @@ def forward(cluster):
         if thisClusterFunctionsResp.status_code == 200 and len(thisClusterFunctionsResp.json()) > 0:
             for fn in thisClusterFunctionsResp.json():
                 if fn['name'] == FUNCTION_NAME:
-                    thisClusterFnIsNotDeleted = False
+                    thisClusterFnIsDeleted = False
                     break
         if thisClusterFnIsDeleted:
             deployResponse = None
@@ -64,11 +64,7 @@ def forward(cluster):
                     otherHasFunctionToDelete = True
                     break
         if otherHasFunctionToDelete:
-            print(f'delete url is: {url_cluster2 if current_url == url_cluster1 else url_cluster1 + '/system/functions'}')
             deleteResponse = requests.delete(otherClusterUrl + '/system/functions', data=json.dumps(deletePayload))
-            print('delete resp: ')
-            print(deleteResponse)
         current_cluster = cluster
     custer_ip = requests.request("GET", current_url + '/function/' + FUNCTION_NAME)
-    print(custer_ip)
     return Response(f'current cluster IP is {custer_ip.text}', status=200)
